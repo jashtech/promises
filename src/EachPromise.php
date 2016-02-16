@@ -7,7 +7,7 @@ namespace GuzzleHttp\Promise;
  */
 class EachPromise implements PromisorInterface
 {
-    private $pending = [];
+    private $pending = array();
 
     /** @var \Iterator */
     private $iterable;
@@ -45,7 +45,7 @@ class EachPromise implements PromisorInterface
      * @param mixed    $iterable Promises or values to iterate.
      * @param array    $config   Configuration options
      */
-    public function __construct($iterable, array $config = [])
+    public function __construct($iterable, array $config = array())
     {
         $this->iterable = iter_for($iterable);
 
@@ -81,31 +81,38 @@ class EachPromise implements PromisorInterface
 
     private function createPromise()
     {
-        $this->aggregate = new Promise(function () {
-            reset($this->pending);
-            if (empty($this->pending) && !$this->iterable->valid()) {
-                $this->aggregate->resolve(null);
+        $thisObject = $this;
+        $pending = $this->pending;
+
+        $this->aggregate = new Promise(function () use ($thisObject) {
+            reset($pending);
+            if (empty($pending) && !$thisObject->iterable->valid()) {
+                $thisObject->getAggregate()->resolve(null);
                 return;
             }
 
             // Consume a potentially fluctuating list of promises while
             // ensuring that indexes are maintained (precluding array_shift).
-            while ($promise = current($this->pending)) {
-                next($this->pending);
+            while ($promise = current($pending)) {
+                next($pending);
                 $promise->wait();
-                if ($this->aggregate->getState() !== PromiseInterface::PENDING) {
+                if ($thisObject->getAggregate()->getState() !== PromiseInterface::PENDING) {
                     return;
                 }
             }
         });
 
         // Clear the references when the promise is resolved.
-        $clearFn = function () {
-            $this->iterable = $this->concurrency = $this->pending = null;
-            $this->onFulfilled = $this->onRejected = null;
+        $clearFn = function () use ($thisObject) {
+            $thisObject->clearFn();
         };
 
         $this->aggregate->then($clearFn, $clearFn);
+    }
+
+    public function clearFn() {
+        $this->iterable = $this->concurrency = $this->pending = null;
+        $this->onFulfilled = $this->onRejected = null;
     }
 
     private function refillPending()
@@ -145,22 +152,23 @@ class EachPromise implements PromisorInterface
         $promise = promise_for($this->iterable->current());
         $idx = $this->iterable->key();
 
+        $thisObject = $this;
         $this->pending[$idx] = $promise->then(
-            function ($value) use ($idx) {
-                if ($this->onFulfilled) {
+            function ($value) use ($idx, $thisObject) {
+                if ($thisObject->getOnFulfilled()) {
                     call_user_func(
-                        $this->onFulfilled, $value, $idx, $this->aggregate
+                        $thisObject->getOnFulfilled(), $value, $idx, $thisObject->getAggregate()
                     );
                 }
-                $this->step($idx);
+                $thisObject->step($idx);
             },
-            function ($reason) use ($idx) {
-                if ($this->onRejected) {
+            function ($reason) use ($idx, $thisObject) {
+                if ($thisObject->getOnRejected()) {
                     call_user_func(
-                        $this->onRejected, $reason, $idx, $this->aggregate
+                        $thisObject->getOnRejected(), $reason, $idx, $thisObject->getAggregate()
                     );
                 }
-                $this->step($idx);
+                $thisObject->step($idx);
             }
         );
 
@@ -203,5 +211,25 @@ class EachPromise implements PromisorInterface
         }
 
         return false;
+    }
+
+    public function getOnFulfilled()
+    {
+        return $this->onFulfilled;
+    }
+
+    public function getOnRejected()
+    {
+        return $this->onRejected;
+    }
+
+    public function getAggregate()
+    {
+        return $this->aggregate;
+    }
+
+    public function getIterable()
+    {
+        return $this->iterable;
     }
 }

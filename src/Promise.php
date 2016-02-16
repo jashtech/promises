@@ -13,15 +13,15 @@ class Promise implements PromiseInterface
     private $cancelFn;
     private $waitFn;
     private $waitList;
-    private $handlers = [];
+    private $handlers = array();
 
     /**
      * @param callable $waitFn   Fn that when invoked resolves the promise.
      * @param callable $cancelFn Fn that when invoked cancels the promise.
      */
     public function __construct(
-        callable $waitFn = null,
-        callable $cancelFn = null
+        $waitFn = null,
+        $cancelFn = null
     ) {
         $this->waitFn = $waitFn;
         $this->cancelFn = $cancelFn;
@@ -32,8 +32,8 @@ class Promise implements PromiseInterface
         $onRejected = null
     ) {
         if ($this->state === self::PENDING) {
-            $p = new Promise(null, [$this, 'cancel']);
-            $this->handlers[] = [$p, $onFulfilled, $onRejected];
+            $p = new Promise(null, array($this, 'cancel'));
+            $this->handlers[] = array($p, $onFulfilled, $onRejected);
             $p->waitList = $this->waitList;
             $p->waitList[] = $this;
             return $p;

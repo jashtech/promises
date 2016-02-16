@@ -13,13 +13,14 @@ namespace GuzzleHttp\Promise;
 class TaskQueue
 {
     private $enableShutdown = true;
-    private $queue = [];
+    private $queue = array();
 
     public function __construct($withShutdown = true)
     {
         if ($withShutdown) {
-            register_shutdown_function(function () {
-                if ($this->enableShutdown) {
+            $thisObject = $this;
+            register_shutdown_function(function () use ($thisObject) {
+                if ($thisObject->isShutdownEnabled()) {
                     // Only run the tasks if an E_ERROR didn't occur.
                     $err = error_get_last();
                     if (!$err || ($err['type'] ^ E_ERROR)) {
@@ -46,7 +47,7 @@ class TaskQueue
      *
      * @param callable $task
      */
-    public function add(callable $task)
+    public function add($task)
     {
         $this->queue[] = $task;
     }
@@ -76,5 +77,10 @@ class TaskQueue
     public function disableShutdown()
     {
         $this->enableShutdown = false;
+    }
+    
+    public function isShutdownEnabled()
+    {
+        return $this->enableShutdown;
     }
 }

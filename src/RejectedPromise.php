@@ -22,8 +22,8 @@ class RejectedPromise implements PromiseInterface
     }
 
     public function then(
-        callable $onFulfilled = null,
-        callable $onRejected = null
+        $onFulfilled = null,
+        $onRejected = null
     ) {
         // If there's no onRejected callback then just return self.
         if (!$onRejected) {
@@ -32,7 +32,7 @@ class RejectedPromise implements PromiseInterface
 
         $queue = queue();
         $reason = $this->reason;
-        $p = new Promise([$queue, 'run']);
+        $p = new Promise(array($queue, 'run'));
         $queue->add(static function () use ($p, $reason, $onRejected) {
             if ($p->getState() === self::PENDING) {
                 try {
@@ -48,7 +48,7 @@ class RejectedPromise implements PromiseInterface
         return $p;
     }
 
-    public function otherwise(callable $onRejected)
+    public function otherwise($onRejected)
     {
         return $this->then(null, $onRejected);
     }

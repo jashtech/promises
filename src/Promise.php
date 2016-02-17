@@ -149,9 +149,9 @@ class Promise implements PromiseInterface
         if (!method_exists($value, 'then')) {
             $id = $state === self::FULFILLED ? 1 : 2;
             // It's a success, so resolve the handlers in the queue.
-            queue()->add(static function () use ($id, $value, $handlers) {
+            queue()->add(function () use ($id, $value, $handlers) {
                 foreach ($handlers as $handler) {
-                    self::callHandler($id, $value, $handler);
+                    Promise::callHandler($id, $value, $handler);
                 }
             });
         } elseif ($value instanceof Promise
@@ -162,14 +162,14 @@ class Promise implements PromiseInterface
         } else {
             // Resolve the handlers when the forwarded promise is resolved.
             $value->then(
-                static function ($value) use ($handlers) {
+                function ($value) use ($handlers) {
                     foreach ($handlers as $handler) {
-                        self::callHandler(1, $value, $handler);
+                        Promise::callHandler(1, $value, $handler);
                     }
                 },
-                static function ($reason) use ($handlers) {
+                function ($reason) use ($handlers) {
                     foreach ($handlers as $handler) {
-                        self::callHandler(2, $reason, $handler);
+                        Promise::callHandler(2, $reason, $handler);
                     }
                 }
             );
@@ -185,7 +185,7 @@ class Promise implements PromiseInterface
      *
      * @return array Returns the next group to resolve.
      */
-    private static function callHandler($index, $value, array $handler)
+    public static function callHandler($index, $value, array $handler)
     {
         /** @var PromiseInterface $promise */
         $promise = $handler[0];
@@ -239,7 +239,7 @@ class Promise implements PromiseInterface
         try {
             $wfn = $this->waitFn;
             $this->waitFn = null;
-            $wfn(true);
+            $wfn[0]->{$wfn[1]}(true);
         } catch (\Exception $reason) {
             if ($this->state === self::PENDING) {
                 // The promise has not been resolved yet, so reject the promise

@@ -339,10 +339,11 @@ function each(
     $onFulfilled = null,
     $onRejected = null
 ) {
-    return (new EachPromise($iterable, array(
+    $newObject = new EachPromise($iterable, array(
         'fulfilled' => $onFulfilled,
         'rejected'  => $onRejected
-    )))->promise();
+    ));
+    return $newObject->promise();
 }
 
 /**
@@ -366,11 +367,12 @@ function each_limit(
     $onFulfilled = null,
     $onRejected = null
 ) {
-    return (new EachPromise($iterable, array(
+    $newObject = new EachPromise($iterable, array(
         'fulfilled'   => $onFulfilled,
         'rejected'    => $onRejected,
         'concurrency' => $concurrency
-    )))->promise();
+    ));
+    return $newObject->promise();
 }
 
 /**

@@ -24,7 +24,7 @@ class TaskQueue
                     // Only run the tasks if an E_ERROR didn't occur.
                     $err = error_get_last();
                     if (!$err || ($err['type'] ^ E_ERROR)) {
-                        $this->run();
+                        $thisObject->run();
                     }
                 }
             });
